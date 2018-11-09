@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Gallery Cleaner</string>
+    <string name="welcome">Welcome to Gallery Cleaner</string>
+    <string name="banner_ad_unit_id">ca-app-pub-9540086841520699/3378627961</string>
+    <string name="sort_preference">recent</string>
+    <string name="FolderSelect">All</string>
+    <string name="warning">The folder you have selected is either empty  or not present please set correct folder name in Settings.</string>
+    <string name="confirm_deletion">Confirm your deletions?</string>
+    <string name="instruction">Remember,Swipe left to delete and swipe right to keep. Press confirm for deletions to happen.</string>
+</resources>

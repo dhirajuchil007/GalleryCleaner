@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="10dp">
+
+    <ImageView
+        android:id="@+id/thumbnail"
+        android:src="@drawable/rectangle_green"
+        android:layout_gravity="center"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_weight="1"
+        android:layout_margin="10dp"/>
+    <TextView
+        android:id="@+id/undo_item_name"
+        android:text="This is a tset only"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_weight="3"
+        android:textSize="15dp"
+        android:layout_gravity="center"
+        android:gravity="center_vertical"/>
+
+</LinearLayout>

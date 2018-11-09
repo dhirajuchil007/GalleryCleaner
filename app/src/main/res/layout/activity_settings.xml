@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.velocityappsdj.gallerycleaner.SettingsActivity"
+    android:padding="10dp"
+    >
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sort Images By:"
+
+
+        android:textSize="20dp"/>
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/sorting_setup"
+        >
+    <RadioButton
+        android:id="@+id/sort_by_recent"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recent"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="24dp"
+        android:onClick="onSortOptionSelected"/>
+    <RadioButton
+        android:id="@+id/sort_by_alphabet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alphabet"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="24dp"
+        android:onClick="onSortOptionSelected"/>
+
+
+    </RadioGroup>
+    <TextView
+        android:paddingTop="10dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Select Folder:"
+
+
+
+
+    android:textSize="20dp"/><RadioGroup
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/folder_load">
+    <RadioButton
+        android:id="@+id/load_all"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="All"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="24dp"
+        android:onClick="onFolderSelected"/>
+    <RadioButton
+        android:id="@+id/load_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Camera"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="24dp"
+        android:onClick="onFolderSelected"/>
+    <RadioButton
+        android:id="@+id/load_whatsapp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="WhatsApp Images"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="24dp"
+        android:onClick="onFolderSelected"/>
+    <RadioButton
+    android:id="@+id/load_custom"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Custom"
+    tools:layout_editor_absoluteX="27dp"
+    tools:layout_editor_absoluteY="24dp"
+    android:onClick="onFolderSelected"/>
+
+
+</RadioGroup>
+    <EditText
+        android:id="@+id/folder_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Folder Name (Case-sensitive)"
+        />
+
+</LinearLayout>
