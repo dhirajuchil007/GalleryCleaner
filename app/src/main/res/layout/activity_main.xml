@@ -23,6 +23,7 @@
         android:layout_height="50dp"
         android:layout_marginTop="10dp"
         android:text="UNDO"
+        android:visibility="gone"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:background="@drawable/undo_button_back"
@@ -30,6 +31,8 @@
 
         android:id="@+id/undo_button"/>
         <Button
+
+            android:visibility="gone"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="50dp"

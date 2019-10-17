@@ -34,6 +34,8 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.lorentzos.flingswipe.SwipeFlingAdapterView;
+import com.nispok.snackbar.Snackbar;
+import com.nispok.snackbar.listeners.ActionClickListener;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         mAdView.loadAd(adRequest);
         restartIntent=getIntent();
+
         SharedPreferences ss=this.getSharedPreferences("FolderName",Context.MODE_PRIVATE);
         cam="%"+ss.getString("Folderss","")+"%";
         Log.e("lol",cam);
@@ -234,15 +237,50 @@ public class MainActivity extends AppCompatActivity {
 
     public void deleteImage(){
         deletion.add(path);
-        File file;
-        int nameind=cur.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
-        String name=cur.getString(nameind);
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        Bitmap bitmap = BitmapFactory.decodeFile(path, options);
-        DataModel undoObject= new DataModel(name,path,bitmap);
-        undoData.add(undoObject);
+        File file =new File(deletion.get(0));
+        file.getAbsoluteFile().delete();
+        getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA + "=?", new String[]{deletion.get(0)});
+        deletion.remove(0);
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    Thread.sleep(5000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                if(deletion.size()!=0) {
+//                    File file = new File(deletion.get(0));
+//                    file.getAbsoluteFile().delete();
+//                    getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA + "=?", new String[]{deletion.get(0)});
+//                   runOnUiThread(new Runnable() {
+//                       @Override
+//                       public void run() {
+//                           deletion.remove(0);
+//                       }
+//                   });
+//                }
+//            }
+//        }).start();
+//        Snackbar.with(this).text("1 item deleted").actionLabel("Undo").actionListener(new ActionClickListener() {
+//            @Override
+//            public void onActionClicked(Snackbar snackbar) {
+//                deletion.remove(0);
+//                Toast.makeText(MainActivity.this,"Undo Successful",Toast.LENGTH_SHORT).show();
+//
+//
+//
+//            }
+//        }).show(MainActivity.this);
+//        File file;
+//        int nameind=cur.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+//        String name=cur.getString(nameind);
+//
+//        BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+//        Bitmap bitmap = BitmapFactory.decodeFile(path, options);
+//        DataModel undoObject= new DataModel(name,path,bitmap);
+//        undoData.add(undoObject);
 
 
 //        int x=deletion.size();

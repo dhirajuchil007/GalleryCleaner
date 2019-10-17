@@ -6,5 +6,5 @@
     <string name="FolderSelect">All</string>
     <string name="warning">The folder you have selected is either empty  or not present please set correct folder name in Settings.</string>
     <string name="confirm_deletion">Confirm your deletions?</string>
-    <string name="instruction">Remember,Swipe left to delete and swipe right to keep. Press confirm for deletions to happen.</string>
+    <string name="instruction">Remember,Swipe left to delete and swipe right to keep.</string>
 </resources>

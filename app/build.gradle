@@ -9,9 +9,9 @@ android {
         applicationId "com.velocityappsdj.galtest"
         minSdkVersion 21
         targetSdkVersion 26
-        versionName '3.0'
+        versionName '4.0'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        versionCode 5
+        versionCode 6
     }
     buildTypes {
         release {
@@ -37,6 +37,7 @@ dependencies {
     compile 'com.google.android.ads.consent:consent-library:1.0.6'
     testCompile 'junit:junit:4.12'
     compile 'com.squareup.picasso:picasso:2.5.2'
+    compile 'com.nispok:snackbar:2.6.1'
 }
 
 
