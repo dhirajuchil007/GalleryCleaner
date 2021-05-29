@@ -1,142 +1,147 @@
 package com.velocityappsdj.gallerycleaner;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.lorentzos.flingswipe.SwipeFlingAdapterView;
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.listeners.ActionClickListener;
+import com.velocityappsdj.gallerycleaner.db.AppDatabase;
+import com.velocityappsdj.gallerycleaner.db.Data;
+import com.velocityappsdj.gallerycleaner.models.FolderItemModel;
+import com.velocityappsdj.gallerycleaner.util.AppExecutors;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+
+import smartdevelop.ir.eram.showcaseviewlib.GuideView;
+import smartdevelop.ir.eram.showcaseviewlib.config.DismissType;
+import smartdevelop.ir.eram.showcaseviewlib.listener.GuideListener;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private AdView mAdView;
     String path;
-    Cursor cur;
+    private FloatingActionButton fab;
     Intent restartIntent;
-    Button confirm;
-        static ArrayList<DataModel> undoData=new ArrayList<>();
-
+    private ImageView imgFolder, imgFilter;
     TextView warnTextView;
-
-
-
     public static MyAppAdapter myAppAdapter;
     public static ViewHolder viewHolder;
-    public ArrayList<Data> array=new ArrayList<>();
+    public List<Data> currentArray;
     private SwipeFlingAdapterView flingContainer;
-    public static ArrayList<String> deletion=new ArrayList<>();
-    String cam=new String();
+    public static ArrayList<String> deletion = new ArrayList<>();
+    String cam = new String();
+    private SharedPrefUtil sharedPrefUtil;
+    private HashMap<String, FolderItemModel> folderHashMap;
+    private AppDatabase mDb;
+    private TextView fabBadge;
+    private ImageView imgBack;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        MobileAds.initialize(getApplicationContext(), "ca-app-pub-9540086841520699~4547636763");
-        mAdView = (AdView) findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder()
-                .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-                .addTestDevice("4E0FA1397589AB27")
-                .build();
-        mAdView.loadAd(adRequest);
-        restartIntent=getIntent();
+        sharedPrefUtil = new SharedPrefUtil(this);
+        restartIntent = getIntent();
+        folderHashMap = UserDataSingleTon.getInstance().folderMap;
+        currentArray = UserDataSingleTon.getInstance().allImages;
+        mDb = AppDatabase.getInstance(this);
+        initViews();
+        setUpClickListeners();
+        setUpAds();
+        setupAdapter();
+        setUpDb();
+        checkAndStartShowCase();
 
-        SharedPreferences ss=this.getSharedPreferences("FolderName",Context.MODE_PRIVATE);
-        cam="%"+ss.getString("Folderss","")+"%";
-        Log.e("lol",cam);
-        confirm=(Button)findViewById(R.id.confirm_button);
-        confirm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                confirmDeletions("confirm");
+
+    }
+
+    private void checkAndStartShowCase() {
+        if (!new SharedPrefUtil(MainActivity.this).getShowCaseDone()) {
+            showCase("", "Welcome to gallery cleaner. Here's  a short tutorial", warnTextView, 1);
+        }
+    }
+
+    private void showCase(String title, String text, View view, int step) {
+        new GuideView.Builder(this)
+                .setContentText(text)
+                .setTargetView(view)
+                .setContentTextSize(18)//optional
+                .setTitleTextSize(20)//optional
+                .setGuideListener(new GuideListener() {
+                    @Override
+                    public void onDismiss(View view) {
+                        if (step == 1) {
+                            showCase("", "Swipe right to keep the image", warnTextView, step + 1);
+                        } else if (step == 2) {
+                            showCase("", "Swipe left to move the image to trash", warnTextView, step + 1);
+                        } else if (step == 3) {
+                            showCase("", "Tap the trash icon to see and confirm/undo the images you want to delete", fab, step + 1);
+                        } else if (step == 4) {
+                            showCase("", "Tap on the folder icon to switch to a specific folder", imgFolder, step + 1);
+                        } else if (step == 5) {
+                            showCase("", "Tap on the sort icon to sort images by date, size or name", imgFilter, step + 1);
+                        } else if (step == 6) {
+                            showCase("", "Thats all for now, enjoy swiping.", warnTextView, step + 1);
+                        }
+                    }
+
+
+                })
+                .setDismissType(DismissType.anywhere) //optional - default dismissible by TargetView
+                .build()
+                .show();
+        new SharedPrefUtil(MainActivity.this).setShowCaseDone(true);
+    }
+
+    private void setUpDb() {
+        mDb.dataDao().loadAllData().observe(MainActivity.this, data -> {
+            if (data == null || data.size() == 0)
+                fabBadge.setVisibility(View.GONE);
+            else {
+                fabBadge.setVisibility(View.VISIBLE);
+                fabBadge.setText(String.valueOf(data.size()));
             }
         });
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED)
-            getImagesList();
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
+    }
 
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        1);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-        }
-
-
+    private void setupAdapter() {
+        Log.d(TAG, "setupAdapter() called");
         flingContainer = (SwipeFlingAdapterView) findViewById(R.id.frame);
-
-        //array = new ArrayList<>();
-        /*
-
-
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Katrina-Kaif.jpg", "Hi I am Katrina Kaif. Wanna chat with me ?. \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Emma-Watson.jpg", "Hi I am Emma Watson. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Scarlett-Johansson.jpg", "Hi I am Scarlett Johansson. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Priyanka-Chopra.jpg", "Hi I am Priyanka Chopra. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Deepika-Padukone.jpg", "Hi I am Deepika Padukone. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Anjelina-Jolie.jpg", "Hi I am Anjelina Jolie. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-        array.add(new Data("https://www.androidtutorialpoint.com/wp-content/uploads/2016/11/Aishwarya-Rai.jpg", "Hi I am Aishwarya Rai. Wanna chat with me ? \n" +
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."));
-            */
-        myAppAdapter = new MyAppAdapter(array, MainActivity.this);
+        myAppAdapter = new MyAppAdapter(currentArray, MainActivity.this);
         flingContainer.setAdapter(myAppAdapter);
+        flingContainer.removeAllViewsInLayout();
+        myAppAdapter.notifyDataSetChanged();
+        flingContainer.setMaxVisible(1);
         flingContainer.setFlingListener(new SwipeFlingAdapterView.onFlingListener() {
             @Override
             public void removeFirstObjectInAdapter() {
@@ -145,17 +150,27 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onLeftCardExit(Object dataObject) {
-                deleteImage();
-                cur.moveToNext();
-
-                int bitColumn = cur.getColumnIndex(MediaStore.Images.Media.DATA);
-                path = cur.getString(bitColumn);
-                Log.d("imagepath",path);
 
 
-                array.add(new Data(path, ""));
-                array.remove(0);
-                myAppAdapter.notifyDataSetChanged();
+                /*deleteImage(currentArray.get(0));*/
+                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        mDb.dataDao().insertData(currentArray.get(0));
+                        currentArray.remove(0);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                myAppAdapter.notifyDataSetChanged();
+                                checkIfArrayEmpty();
+                            }
+                        });
+
+
+                    }
+                });
+
 
                 //Do something on the left!
                 //You also have access to the original object.
@@ -165,16 +180,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onRightCardExit(Object dataObject) {
 
-                cur.moveToNext();
+             /*   cur.moveToNext();
 
                 int bitColumn = cur.getColumnIndex(MediaStore.Images.Media.DATA);
                 path = cur.getString(bitColumn);
-                Log.d("imagepath",path);
+                Log.d("imagepath", path);
 
-                array.add(new Data(path, "lol"));
+                array.add(new Data(path, "lol"));*/
 
-                array.remove(0);
+                currentArray.remove(0);
                 myAppAdapter.notifyDataSetChanged();
+                checkIfArrayEmpty();
             }
 
             @Override
@@ -193,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
                 view.findViewById(R.id.delete_panel).setAlpha(scrollProgressPercent < 0 ? -scrollProgressPercent : 0);
                 view.findViewById(R.id.keep_panel).setAlpha(scrollProgressPercent > 0 ? scrollProgressPercent : 0);
             }
+
         });
 
 
@@ -207,18 +224,103 @@ public class MainActivity extends AppCompatActivity {
                 myAppAdapter.notifyDataSetChanged();
             }
         });
+    }
 
-        final Button undo =(Button)findViewById(R.id.undo_button);
-        undo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent inter=new Intent(MainActivity.this,UndoActivity.class);
+    private void checkIfArrayEmpty() {
+        if (currentArray.size() == 0) {
+            warnTextView.setVisibility(View.VISIBLE);
+            warnTextView.setText("All images int this folder viewed. Please select another folder.");
+        } else
+            warnTextView.setVisibility(View.GONE);
+    }
 
-                startActivity(inter);
-            }
+    private void setUpAds() {
+        RequestConfiguration requestConfiguration = new RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("7F79B920BD3C90A7F8DE397779A69B4A")).build();
+        MobileAds.setRequestConfiguration(requestConfiguration);
+        MobileAds.initialize(getApplicationContext());
+        mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder()
+                .build();
+        mAdView.loadAd(adRequest);
+    }
+
+
+    private void setUpClickListeners() {
+        imgFilter.setOnClickListener(v -> {
+            SortByBottomSheet bottomSheetFragment = new SortByBottomSheet(new SortByBottomSheet.IOnSortSelected() {
+                @Override
+                public void OnSelected(String pref) {
+                    Log.d(TAG, "OnSelected() called with: pref = [" + pref + "]");
+                    sharedPrefUtil.saveSortPref(ApplicationConstants.sort_order.get(pref));
+
+                    sortCurrentList();
+                }
+            }, new SharedPrefUtil(MainActivity.this).getSortPref());
+            bottomSheetFragment.show(getSupportFragmentManager(), bottomSheetFragment.getTag());
         });
+        imgFolder.setOnClickListener(v -> {
 
+            FolderListBottomSheet bottomSheet = new FolderListBottomSheet(onFolderSelected, MainActivity.this, folderHashMap, currentArray);
+            bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
 
+        });
+        fab.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, UndoActivity.class)));
+        imgBack.setOnClickListener(v -> onBackPressed());
+    }
+
+    FolderListBottomSheet.OnFolderSelected onFolderSelected = new FolderListBottomSheet.OnFolderSelected() {
+        @Override
+        public void onSelected(int position, FolderItemModel folderItemModel) {
+            Log.d(TAG, "onSelected() called with: position = [" + position + "], folderItemModel = [" + folderItemModel + "]");
+            List<Data> dataList = folderItemModel.getImagesData();
+            UserDataSingleTon.getInstance().selectedFolder = folderItemModel.getName();
+            currentArray = dataList;
+            sortCurrentList();
+            myAppAdapter = new MyAppAdapter(currentArray, MainActivity.this);
+            flingContainer.setAdapter(myAppAdapter);
+            flingContainer.removeAllViewsInLayout();
+            myAppAdapter.notifyDataSetChanged();
+
+            checkIfArrayEmpty();
+
+        }
+    };
+
+    private void sortCurrentList() {
+        String pref = sharedPrefUtil.getSortPref();
+        switch (pref) {
+            case "name": {
+                Log.d(TAG, "getImagesList: by name");
+                Collections.sort(currentArray, (a, b) -> {
+                    return a.getDisplayName().compareTo(b.getDisplayName());
+                });
+
+                break;
+            }
+
+            case "size": {
+                Log.d(TAG, "getImagesList: by size");
+                Collections.sort(currentArray, (a, b) -> a.getSize() - b.getSize());
+                break;
+            }
+            default: {
+                Log.d(TAG, "getImagesList: by default" + cam);
+                Collections.sort(currentArray, (a, b) -> b.getDateTaken().compareTo(a.getDateTaken()));
+                break;
+            }
+        }
+        flingContainer.removeAllViewsInLayout();
+        myAppAdapter.notifyDataSetChanged();
+        checkIfArrayEmpty();
+    }
+
+    private void initViews() {
+        imgFolder = findViewById(R.id.imgFolder);
+        imgFilter = findViewById(R.id.imgFilter);
+        warnTextView = findViewById(R.id.warning_text);
+        fab = findViewById(R.id.fab);
+        fabBadge = findViewById(R.id.txtFabBadge);
+        imgBack = findViewById(R.id.imgBack);
     }
 
     @Override
@@ -226,18 +328,18 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
     }
+
     @Override
     public void onBackPressed() {
-        if(deletion.size()>0)
-        confirmDeletions("back");
-        else
-        MainActivity.this.finish();
+        super.onBackPressed();
 
     }
 
-    public void deleteImage(){
-        deletion.add(path);
-        File file =new File(deletion.get(0));
+    public void deleteImage(Data data) {
+        Log.d(TAG, "deleteImage() called");
+
+        deletion.add(data.getImagePath());
+        File file = new File(deletion.get(0));
         file.getAbsoluteFile().delete();
         getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA + "=?", new String[]{deletion.get(0)});
         deletion.remove(0);
@@ -300,193 +402,12 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[],int[] grantResults) {
-        switch (requestCode) {
-            case 1: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-                    getImagesList();
-                    finish();
-                    startActivity(restartIntent);
-
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
-        }
-    }
 
 
     public static class ViewHolder {
         public static FrameLayout background;
         public TextView DataText;
         public ImageView cardImage;
-
-
-    }
-
-    public void getImagesList() {
-
-        String[] projection = new String[]{
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-                MediaStore.Images.Media.DATE_TAKEN,
-                MediaStore.Images.Media.DATA,
-                MediaStore.Images.Media.DISPLAY_NAME,
-
-
-
-        };
-
-        //String cam="%Camera%";
-// content:// style URI for the "primary" external storage volume
-        Uri images = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-        SharedPreferences sharedPref = this.getSharedPreferences("MyPreferences",Context.MODE_PRIVATE);
-        String sortOrder=sharedPref.getString(getString(R.string.sort_preference),"recent");
-        if(sortOrder.equals("recent")) {
-
-// Make the query.
-            cur = getContentResolver().query(images,
-                    projection, // Which columns to return
-                    MediaStore.Images.Media.DATA +" like ?",       // Which rows to return (all rows)
-                    new String[]{cam},       // Selection arguments (none)
-                    MediaStore.Images.Media.DATE_TAKEN + " DESC"       // Ordering
-            );
-        }
-        else
-        {
-            cur = getContentResolver().query(images,
-                    projection, // Which columns to return
-                    MediaStore.Images.Media.DATA +" like ?",       // Which rows to return (all rows)
-                    new String[]{cam},       // Selection arguments (none)
-                    MediaStore.Images.Media.DISPLAY_NAME      // Ordering
-            );
-
-        }
-        /*
-        if (cur.moveToFirst()) {
-            String bucket;
-            String date;
-            Bitmap bit;
-            int bucketColumn = cur.getColumnIndex(
-                    MediaStore.Images.Media.DISPLAY_NAME);
-            int bitColumn=cur.getColumnIndex(MediaStore.Images.Media.DATA);
-            int dateColumn = cur.getColumnIndex(
-                    MediaStore.Images.Media.DATE_TAKEN);
-            String format = "MM-dd-yyyy HH:mm:ss";
-            path=cur.getString(bitColumn);
-            SimpleDateFormat formatter = new SimpleDateFormat(format, Locale.ENGLISH);
-            */
-
-        setImageView();
-
-/*
-            do {
-                // Get the field values
-                bucket = cur.getString(bucketColumn);
-                date = cur.getString(dateColumn);
-                String dateTime = formatter.format(new Date(Long.parseLong(date)));
-
-
-                // Do something with the values.
-                Log.i("ListingImages", " bucket=" + bucket
-                        + "  date_taken=" + dateTime);
-            } while (cur.moveToNext());
-*/
-    }
-
-
-    public void setImageView() {
-
-
-        cur.moveToFirst();
-        if(cur.getCount()==0)
-        {
-            warnTextView=(TextView)findViewById(R.id.warning_text);
-            warnTextView.setText(R.string.warning);
-
-        }
-        else {
-
-            int bitColumn = cur.getColumnIndex(MediaStore.Images.Media.DATA);
-            path = cur.getString(bitColumn);
-            Log.d("imagepath", path);
-
-            array.add(new Data(path, "lol"));
-        }
-           // cur.moveToNext();
-
-
-    }
-    public void confirmDeletions(String action){
-        if(action.equals("confirm")) {
-            new AlertDialog.Builder(this)
-                    .setMessage(R.string.confirm_deletion)
-                    .setCancelable(false)
-                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            undoData.clear();
-                            int x = deletion.size();
-                            for (int i = 0; i < x; i++) {
-                                File file = new File(deletion.get(i));
-                                file.getAbsoluteFile().delete();
-                                int nameIndex = cur.getColumnIndex(MediaStore.Images.Media.DATA);
-
-                                //Log.d("deleted",deletion.get(0));
-                                getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA + "=?", new String[]{deletion.get(i)});
-
-                            }
-                            deletion.clear();
-                            //  MainActivity.this.finish();
-                        }
-                    })
-                    .setNegativeButton("No", null)
-                    .show();
-        }
-        else if(action.equals("back"))
-        {
-            new AlertDialog.Builder(this)
-                    .setMessage(R.string.confirm_deletion)
-                    .setCancelable(false)
-                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            undoData.clear();
-                            int x=deletion.size();
-                            for(int i=0;i<x;i++)
-                            {
-                                File file = new File(deletion.get(i));
-                                file.getAbsoluteFile().delete();
-                                int nameIndex = cur.getColumnIndex(MediaStore.Images.Media.DATA);
-
-                                //Log.d("deleted",deletion.get(0));
-                                getContentResolver().delete(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA + "=?", new String[]{deletion.get(i)});
-
-                            }
-                            deletion.clear();
-                              MainActivity.this.finish();
-                        }
-                    })
-                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            MainActivity.this.finish();
-                        }
-                    })
-                    .show();
-        }
-
 
 
     }
@@ -524,8 +445,6 @@ public class MainActivity extends AppCompatActivity {
             View rowView = convertView;
 
 
-
-
             if (rowView == null) {
 
                 LayoutInflater inflater = getLayoutInflater();
@@ -542,7 +461,25 @@ public class MainActivity extends AppCompatActivity {
             }
             //viewHolder.DataText.setText(parkingList.get(position).getDescription() + "");
 
-            Glide.with(MainActivity.this).load(parkingList.get(position).getImagePath()).into(viewHolder.cardImage);
+            Glide.with(MainActivity.this).load(parkingList.get(position).getImagePath())
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            Log.e(TAG, "onLoadFailed: ", e);
+                            if (currentArray.size() > 0) {
+                                currentArray.remove(0);
+                                flingContainer.removeAllViewsInLayout();
+                                myAppAdapter.notifyDataSetChanged();
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
+                    .into(viewHolder.cardImage);
 
             return rowView;
         }

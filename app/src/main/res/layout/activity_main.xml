@@ -1,58 +1,58 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 
 
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:android2="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
+    style="@style/Theme.AppCompat.Light"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity"
-    android:background="@color/colorPrimary">
+    tools:context=".MainActivity">
+
+
     <LinearLayout
-        android:orientation="horizontal"
+        android:background="@color/colorPrimary"
+        android:id="@+id/top_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:elevation="1dp"
-        >
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-    <Button
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="50dp"
-        android:layout_marginTop="10dp"
-        android:text="UNDO"
-        android:visibility="gone"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:background="@drawable/undo_button_back"
-        android:textColor="@android:color/white"
+        <ImageView
+            android:id="@+id/imgFolder"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginRight="8dp"
+            android:src="@drawable/ic_baseline_folder_24"
+            android:tintMode="src_in"
+            app:tint="#000000" />
 
-        android:id="@+id/undo_button"/>
-        <Button
+        <ImageView
+            android:id="@+id/imgFilter"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_baseline_filter_list_24" />
 
-            android:visibility="gone"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="50dp"
-            android:layout_marginTop="10dp"
-            android:text="Confirm"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:background="@drawable/undo_button_back"
-            android:textColor="@android:color/white"
 
-            android:id="@+id/confirm_button"/>
     </LinearLayout>
+    <ImageView
+        android:id="@+id/imgBack"
+        android:layout_width="35dp"
+        android:layout_margin="12dp"
+        android:src="@drawable/ic_baseline_arrow_white_24"
+        android:layout_height="35dp"/>
 
     <!-- activity view -->
     <FrameLayout
         android:layout_width="match_parent"
-
         android:layout_height="match_parent"
-        android2:background="@drawable/background"
-       >
+
+        android:layout_below="@id/top_container"
+
+        >
 
 
         <com.lorentzos.flingswipe.SwipeFlingAdapterView
@@ -60,32 +60,61 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/background"
-            app:rotation_degrees="15.5"
-             />
+            app:rotation_degrees="15.5" />
 
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/txtFabBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/fab"
+        android:layout_marginStart="-45dp"
+        android:layout_marginTop="-10dp"
+        android:layout_toEndOf="@id/fab"
+        android:background="@drawable/fab_label"
+        android:elevation="7dp"
+        android:paddingStart="12dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="2dp"
+        android:text="1"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/adView"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_baseline_delete_24" />
+
     <com.google.android.gms.ads.AdView
         android:id="@+id/adView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
         ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id">
-    </com.google.android.gms.ads.AdView>
+        ads:adUnitId="@string/banner_ad_unit_id"></com.google.android.gms.ads.AdView>
+
     <TextView
+        android:id="@+id/warning_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
-        android:id="@+id/warning_text"
-        android:textAlignment="center"
-        android:textColor="@color/colorAccent"
-
+        android:layout_centerVertical="true"
         android:layout_margin="15dp"
-        android:textSize="15dp"
-        />
-
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
 
 </RelativeLayout>
